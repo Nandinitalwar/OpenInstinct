@@ -21,10 +21,16 @@ minimumReleaseAgeExclude:
 allowBuilds:
   "@embedded-postgres/darwin-arm64": true
   "@google/genai": false
+  "@mongodb-js/zstd": false
   cbor-extract: false
   esbuild: true
+  node-liblzma: false
   protobufjs: false
   sharp: true
 patchedDependencies:
   "@linqapp/chat-sdk-adapter@0.5.1": patches/@linqapp__chat-sdk-adapter@0.5.1.patch
   eve@0.66.3: patches/eve@0.66.3.patch
+
+ignoredOptionalDependencies:
+  - "@mongodb-js/zstd"
+  - node-liblzma

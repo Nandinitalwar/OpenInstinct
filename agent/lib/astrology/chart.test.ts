@@ -1,6 +1,7 @@
-import { Body } from "astronomy-engine";
 import { describe, expect, it } from "vitest";
 import { calculateAstrology } from "./chart";
+import reference from "@tests/fixtures/astrology-reference.json";
+import { siderealPositions, grahaRelationships } from "./sidereal";
 
 const birth = {
   localDateTime: "2000-01-01T07:00:00",
@@ -8,22 +9,85 @@ const birth = {
 };
 
 describe("astrology calculations", () => {
+  it.each(reference.samples)(
+    "matches independent sidereal references at $at within 0.05 degrees",
+    ({ at, positions }) => {
+      const result = siderealPositions(new Date(at));
+      for (const [body, expected] of Object.entries(positions)) {
+        const actual = result.positions.find((item) => item.body === body);
+        if (!actual) throw new Error(`Missing calculated graha: ${body}`);
+        const delta = Math.abs(actual.longitude - expected);
+        expect(Math.min(delta, 360 - delta)).toBeLessThan(0.05);
+      }
+      const rahu = result.positions.find((item) => item.body === "Rahu");
+      const ketu = result.positions.find((item) => item.body === "Ketu");
+      if (!rahu || !ketu) throw new Error("Missing lunar nodes");
+      expect(Math.abs(rahu.longitude - ketu.longitude)).toBeCloseTo(180, 3);
+      expect(rahu.retrograde).toBe(true);
+    }
+  );
+
+  it("uses directional whole-sign graha drishti and excludes node drishti", () => {
+    const longitude = new Map([
+      ["Mars", 0],
+      ["Moon", 90],
+      ["Jupiter", 30],
+      ["Venus", 150],
+      ["Saturn", 60],
+      ["Sun", 120],
+      ["Rahu", 0],
+      ["Ketu", 180],
+    ]);
+    const positions = siderealPositions(
+      new Date("2000-01-01T12:00:00Z")
+    ).positions;
+    for (const item of positions) {
+      item.longitude = longitude.get(item.body) ?? item.longitude;
+      item.rashiIndex = Math.floor(item.longitude / 30);
+    }
+    const relationships = grahaRelationships(positions, positions, true);
+    expect(relationships).toContainEqual({
+      from: "Mars",
+      to: "Moon",
+      relationship: "graha-drishti",
+      signDistance: 4,
+    });
+    expect(relationships).toContainEqual({
+      from: "Jupiter",
+      to: "Venus",
+      relationship: "graha-drishti",
+      signDistance: 5,
+    });
+    expect(relationships).toContainEqual({
+      from: "Saturn",
+      to: "Sun",
+      relationship: "graha-drishti",
+      signDistance: 3,
+    });
+    expect(
+      relationships.some((item) => item.from === "Sun" && item.to === "Moon")
+    ).toBe(false);
+    expect(
+      relationships.some(
+        (item) =>
+          ["Rahu", "Ketu"].includes(item.from) &&
+          item.relationship === "graha-drishti"
+      )
+    ).toBe(false);
+  });
+
   it("resolves historical local time and returns a geocentric natal chart", () => {
     const result = calculateAstrology({ mode: "natal", birth });
     expect(result.status).toBe("ok");
     expect(result.natal?.birth.utc).toBe("2000-01-01T12:00:00.000Z");
-    expect(result.natal?.positions).toHaveLength(10);
-    const sun = result.natal?.positions.find((item) => item.body === Body.Sun);
-    expect(sun?.sign).toBe("Capricorn");
-    expect(sun?.longitude).toBeCloseTo(280.37, 1);
-    const moon = result.natal?.positions.find(
-      (item) => item.body === Body.Moon
-    );
-    expect(moon?.longitude).toBeCloseTo(223.32, 1);
-    expect(
-      new Set(result.natal?.aspects.map((item) => `${item.from}/${item.to}`))
-        .size
-    ).toBe(result.natal?.aspects.length);
+    expect(result.natal?.positions).toHaveLength(9);
+    const sun = result.natal?.positions.find((item) => item.body === "Sun");
+    expect(sun?.sign).toBe("Sagittarius");
+    expect(sun?.longitude).toBeCloseTo(256.5157, 1);
+    const moon = result.natal?.positions.find((item) => item.body === "Moon");
+    expect(moon?.longitude).toBeCloseTo(199.4706, 1);
+    expect(moon?.nakshatra).toEqual({ name: "Swati", pada: 4 });
+    expect(result.natal?.ayanamsaDegrees).toBeCloseTo(23.8532, 3);
   });
 
   it("rejects missing birth data instead of inventing a time", () => {
@@ -82,16 +146,12 @@ describe("astrology calculations", () => {
       at: "2000-01-01T12:00:00Z",
     });
     expect(
-      result.transits?.aspectsToNatal.filter(
+      result.transits?.relationshipsToNatal.filter(
         (item) =>
           item.from === item.to &&
-          item.aspect === "conjunction" &&
-          item.orb === 0
+          item.relationship === "same-rashi conjunction"
       )
-    ).toHaveLength(10);
-    expect(result.transits?.aspectsToNatal.every((item) => item.orb <= 3)).toBe(
-      true
-    );
+    ).toHaveLength(9);
   });
 
   it("calculates sky without birth data and reports retrograde motion", () => {
@@ -99,11 +159,13 @@ describe("astrology calculations", () => {
       mode: "sky",
       at: "2024-04-15T12:00:00Z",
     });
+    if (!("positions" in result))
+      throw new Error("Expected calculated sky positions");
     expect(
-      result.positions?.find((item) => item.body === Body.Mercury)?.retrograde
+      result.positions.find((item) => item.body === "Mercury")?.retrograde
     ).toBe(true);
     expect(
-      result.positions?.find((item) => item.body === Body.Sun)?.retrograde
+      result.positions.find((item) => item.body === "Sun")?.retrograde
     ).toBe(false);
     expect(result.natal).toBeUndefined();
   });

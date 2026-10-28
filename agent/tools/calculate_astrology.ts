@@ -4,7 +4,7 @@ import { calculateAstrology } from "@agent/lib/astrology/chart";
 
 export default defineTool({
   description:
-    "Calculate Western tropical planetary positions, major natal aspects, or transits. Birth times must be known and confirmed. Rejects ambiguous/nonexistent local times unless an explicit valid offset disambiguates them. No houses or rising signs. Does not save personal data.",
+    "Calculate Vedic sidereal rashis, nakshatras/padas, mean Rahu/Ketu, whole-sign graha drishti, and transits using a Lahiri-aligned approximation. Birth times must be known and confirmed. Rejects ambiguous/nonexistent local times unless an explicit valid offset disambiguates them. No houses or rising signs. Does not save personal data.",
   inputSchema: z.object({
     mode: z.enum(["natal", "transits", "sky"]),
     birth: z

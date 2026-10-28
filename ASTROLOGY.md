@@ -1,7 +1,7 @@
 # Astrology text agent — first version
 
-This fork specializes the existing OpenInstinct agent for conversational Western
-tropical astrology. The existing web chat and Linq iMessage channel use the same
+This fork specializes the existing OpenInstinct agent for conversational Vedic
+sidereal astrology. The existing web chat and Linq iMessage channel use the same
 root instructions and `calculate_astrology` tool. Model calls now use OpenRouter
 by default, with the original Vercel AI Gateway route available via configuration.
 
@@ -12,6 +12,13 @@ for local astrology chat. On this Mac, run `pnpm db:local` in one terminal to
 start persistent PostgreSQL on `127.0.0.1:54329`. Its data directory is ignored
 by Git. This database uses development credentials and binds only to loopback;
 it is not a production database service.
+
+The root and browser worker explicitly use Eve's JavaScript/virtual-filesystem
+sandbox. Astrology calculations do not require a VM, Docker, or native shell
+commands. This sandbox cannot run native processes; browser tasks still need
+Kernel. The agent-runtime build is checked separately with `pnpm build:eve`.
+Do not run a production build while the development runtime is rebuilding its
+artifacts.
 
 Copy `.env.example` to `.env.local` if it does not already exist. Set
 `MODEL_PROVIDER=openrouter`, `OPENROUTER_API_KEY` to your key, and
@@ -41,19 +48,38 @@ invalid OpenRouter key never triggers an automatic paid fallback to that path.
 - Local-time conversion with historical zone rules. Ambiguous and nonexistent
   daylight-saving times fail rather than silently shifting. A confirmed offset
   can disambiguate a repeated time.
-- Geocentric tropical longitudes and signs for Sun, Moon, Mercury, Venus, Mars,
-  Jupiter, Saturn, Uranus, Neptune, and Pluto using Astronomy Engine 2.1.19.
-- Five major natal aspects with a fixed 6° orb; transit-to-natal aspects with a
-  fixed 3° orb. Orbs are conventions, not astronomical accuracy estimates.
+- Geocentric sidereal positions for Sun, Moon, Mercury, Venus, Mars, Jupiter,
+  Saturn, mean Rahu, and Ketu, with English signs and Sanskrit rashis.
+- A Lahiri-aligned approximation: the mean J2000 reference direction is
+  propagated with Astronomy Engine precession/nutation into the true ecliptic
+  of date. Rahu uses a mean-node polynomial; Ketu is exactly opposite Rahu.
+- Nakshatras and padas, with warnings near classification boundaries.
+- Whole-sign Parashari graha drishti: seventh for the seven classical grahas,
+  plus Mars fourth/eighth, Jupiter fifth/ninth, Saturn third/tenth. Node drishti
+  is excluded by convention. Same-rashi conjunctions do not imply close degree
+  conjunctions. Sign distances are not houses from the lagna.
 - Retrograde flags based on a centered two-hour longitude difference.
 - Current sky without a birth profile; transit comparisons at a requested instant.
 - Instructions for concise texts, symbolic interpretation, consent before saving
   birth details, and opt-in scheduling using inherited tools.
 
-The supported product date range is 1900–2100. There are no rising signs, houses,
-sidereal/Vedic charts, nodes, asteroids, compatibility scores, or searches for
-exact future events. Unknown birth times support general discussion only in
-this version. Calculations return structured data; the model supplies the reading.
+The supported product date range is 1900–2100. There are no lagna/ascendant,
+houses, dashas, divisional charts, true nodes, compatibility scores, remedies,
+or exact future event searches. Unknown birth times support general discussion
+only in this version. Calculations return structured data; the model supplies
+the symbolic reading.
+
+This is an approximation suitable for initial testing, not an exact kundli
+engine. Reference fixtures in `tests/fixtures/astrology-reference.json` were generated
+independently using Swiss Ephemeris 2.10.03, Lahiri sidereal mode and Moshier
+positions at six dates spanning 1900–2100. The tests require every sampled graha
+to agree within 0.05 degrees. This tolerance is a regression criterion for those
+samples, not a guaranteed error bound for every date. The reference engine is
+not a runtime dependency and its code is not included. Engine differences and
+birth-time uncertainty can change classifications near a boundary; the tool
+returns a warning within 0.05 degrees of a pada boundary. All rashi and
+nakshatra boundaries are also pada boundaries.
+
 Onboarding, memory consent, and reading style are model instructions and still
 need live conversation evaluation before launch.
 

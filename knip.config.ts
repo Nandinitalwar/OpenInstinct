@@ -10,6 +10,7 @@ export default {
     "agent/memory/**/*.ts",
     "agent/subagents/**/*.ts",
     "agent/schedules/**/*.ts",
+    "agent/sandbox.ts",
     "agent/tools/**/*.ts",
     "db/drizzle.config.ts",
     // Drizzle consumes every table and relation exported by this schema barrel.
@@ -21,6 +22,8 @@ export default {
     "tests/runtime/fixture/evals/**/*.ts",
   ],
   ignoreDependencies: [
+    // Loaded by Eve's explicitly configured JustBashSandbox provider.
+    "just-bash",
     // Type owners referenced by the Eve declaration patch, which Knip does not parse.
     "@linqapp/chat-sdk-adapter",
     "chat",
