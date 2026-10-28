@@ -22,6 +22,7 @@ describe("root and worker capability boundaries", () => {
     expect(rootAgent.defaultTools).toBe(false);
     expect(toolFiles(rootTools)).toEqual([
       "ask_question.ts",
+      "calculate_astrology.ts",
       "calendar.ts",
       "contacts.ts",
       "gmail.ts",

@@ -9,7 +9,7 @@ describe("agent instructions", () => {
   it.each([
     ["scheduled-worker", "isolated background session"],
     ["scheduled-result", "evaluating the completed outcome"],
-    ["linq", "root coordinator"],
+    ["linq", "astrology guide"],
   ])("selects %s instructions for the current turn", async (role, phrase) => {
     const resolve = roleInstructions.events["turn.started"];
     expect(resolve).toBeDefined();
