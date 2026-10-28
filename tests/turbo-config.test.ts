@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 const applicationEnvironment = [
+  "MODEL_PROVIDER",
+  "OPENROUTER_*",
   "BETTER_AUTH_*",
   "BLOB_*",
   "DATABASE_URL",

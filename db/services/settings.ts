@@ -1,9 +1,14 @@
 import { and, eq } from "drizzle-orm";
 import type { AccessScope } from "@shared/identity/access-scope";
 import { db, settings } from "@db";
+import { env } from "@shared/environment";
 
-const gatewayModelKey = "gateway_model";
-const defaultGatewayModel = "openai/gpt-6.1-sol-fast";
+const gatewayModelKey =
+  env.MODEL_PROVIDER === "openrouter" ? "openrouter_model" : "gateway_model";
+const defaultGatewayModel =
+  env.MODEL_PROVIDER === "openrouter"
+    ? env.OPENROUTER_MODEL
+    : "openai/gpt-6.1-sol-fast";
 
 async function readGatewayModel(scope: AccessScope) {
   const rows = await db

@@ -45,7 +45,7 @@ describe("root agent model resolution", () => {
       userId: "user-1",
       workspaceId: "workspace-1",
     });
-    expect(model).toBe("openai/gpt-5.6-sol-fast");
+    expect(model).toMatchObject({ model: "openai/gpt-5.6-sol-fast" });
   });
 
   it("rejects a scheduled worker after its lease is replaced", async () => {

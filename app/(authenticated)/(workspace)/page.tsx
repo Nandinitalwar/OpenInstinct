@@ -32,7 +32,7 @@ export default async function Page({ searchParams }: PageProps<"/">) {
     readGoogleWorkspaceConnection(scope.userId),
     getGatewayModel(scope),
   ]);
-  const browserReady = true;
+  const browserReady = Boolean(env.KERNEL_API_KEY);
   const imageStorageReady = Boolean(
     env.BLOB_STORE_ID ?? env.BLOB_READ_WRITE_TOKEN
   );
@@ -87,7 +87,11 @@ export default async function Page({ searchParams }: PageProps<"/">) {
             action={<ModelSelector modelId={gatewayModel} />}
             description={gatewayModel}
             icon={<BotIcon />}
-            label="AI Gateway model"
+            label={
+              env.MODEL_PROVIDER === "openrouter"
+                ? "OpenRouter model"
+                : "AI Gateway model"
+            }
           />
         </div>
       </WorkspaceSection>

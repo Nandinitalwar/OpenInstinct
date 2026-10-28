@@ -31,6 +31,12 @@ describe("environment", () => {
     expect(env).toMatchObject(requiredEnvironment);
   });
 
+  it("allows astrology chat without browser credentials", async () => {
+    vi.stubEnv("KERNEL_API_KEY", "");
+    const { env } = await import("@shared/environment");
+    expect(env.KERNEL_API_KEY).toBeUndefined();
+  });
+
   it("provides the Google connector default without enabling Linq", async () => {
     vi.stubEnv("GOOGLE_CONNECTOR_UID", "");
 
@@ -103,7 +109,7 @@ describe("environment", () => {
     expect(env.SECRET_ENCRYPTION_KEY).toBeUndefined();
   });
 
-  it.each(["DATABASE_URL", "KERNEL_API_KEY"])(
+  it.each(["DATABASE_URL"])(
     "keeps %s required in local development",
     async (name) => {
       vi.stubEnv(name, "");
@@ -126,10 +132,7 @@ describe("environment", () => {
     expect(env.SECRET_ENCRYPTION_KEY).toBe(key);
   });
 
-  it.each([
-    ["DATABASE_URL", "Invalid environment variables"],
-    ["KERNEL_API_KEY", "Invalid environment variables"],
-  ])(
+  it.each([["DATABASE_URL", "Invalid environment variables"]])(
     "rejects a missing required %s value during import",
     async (name, errorMessage) => {
       vi.stubEnv(name, "");

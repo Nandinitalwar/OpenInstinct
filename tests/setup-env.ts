@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 
 const testEnvironment = {
+  MODEL_PROVIDER: "gateway",
   BETTER_AUTH_SECRET: "test-auth-secret-0123456789abcdefghijklmnop",
   BETTER_AUTH_URL: "https://example.com",
   BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_test",

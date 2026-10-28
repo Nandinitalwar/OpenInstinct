@@ -1,6 +1,7 @@
 import { defineWorkflowTool } from "eve/tools";
 import { z } from "zod";
 import { taskCompletionSchema } from "@agent/subagents/browser-agent/lib/completion";
+import { env } from "@shared/environment";
 
 export default defineWorkflowTool({
   description:
@@ -12,6 +13,11 @@ export default defineWorkflowTool({
   execution: "background",
   async execute(input, ctx) {
     "use workflow";
+    if (!env.KERNEL_API_KEY) {
+      throw new Error(
+        "Browser automation is not configured. Astrology calculations and web chat do not require it."
+      );
+    }
     const result = await ctx.agent("browser-agent", {
       ...input,
       outputSchema: z

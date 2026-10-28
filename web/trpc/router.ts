@@ -1,4 +1,3 @@
-import { gateway } from "ai";
 import { revokeToken, startAuthorization } from "@vercel/connect";
 import { z } from "zod";
 import { listBrowserTraces } from "@db/services/browser-traces";
@@ -9,6 +8,7 @@ import { deleteVaultItem, saveVaultItem } from "@db/services/vault";
 import type { AccessScope } from "@shared/identity/access-scope";
 import { saveChatSchema } from "@shared/chat/schema";
 import { env } from "@shared/environment";
+import { readModelCatalog } from "@shared/models/catalog";
 import {
   googleWorkspaceSubject,
   googleWorkspaceTokenParams,
@@ -50,9 +50,12 @@ export const appRouter = createTRPCRouter({
   settings: {
     selectModel: protectedProcedure
       .input(z.object({ modelId: z.string().trim().min(1).max(300) }))
-      .mutation(({ ctx, input }) =>
-        selectGatewayModel(ctx.scope, input.modelId)
-      ),
+      .mutation(async ({ ctx, input }) => {
+        const models = await readModelCatalog();
+        if (!models.some((model) => model.id === input.modelId))
+          throw new Error("Choose a tool-capable model from the catalog.");
+        await selectGatewayModel(ctx.scope, input.modelId);
+      }),
   },
   userProfile: {
     update: protectedProcedure
@@ -99,43 +102,4 @@ async function startGoogleWorkspaceAuthorization(
     { callbackUrl, expiresInMs: 10 * 60_000 }
   );
   return authorization.url;
-}
-
-async function readModelCatalog() {
-  const { models } = await gateway.getAvailableModels();
-
-  return z
-    .array(
-      z.object({
-        id: z.string(),
-        name: z.string(),
-        ownedBy: z.string(),
-        pricing: z
-          .object({
-            input: z.number().nonnegative().optional(),
-            output: z.number().nonnegative().optional(),
-          })
-          .optional(),
-      })
-    )
-    .parse(
-      models
-        .filter((model) => model.modelType === "language")
-        .map((model) => ({
-          id: model.id,
-          name: model.name,
-          ownedBy: model.specification.provider,
-          pricing: model.pricing
-            ? {
-                input: perMillion(model.pricing.input),
-                output: perMillion(model.pricing.output),
-              }
-            : undefined,
-        }))
-    );
-}
-
-function perMillion(value: string) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed * 1_000_000 : undefined;
 }

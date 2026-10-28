@@ -12,3 +12,5 @@ next-env.d.ts
 dist
 .DS_Store
 *.tsbuildinfo
+
+.local-postgres/

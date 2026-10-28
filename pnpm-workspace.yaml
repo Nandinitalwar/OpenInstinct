@@ -19,6 +19,7 @@ minimumReleaseAgeExclude:
   - picomatch
   - systeminformation
 allowBuilds:
+  "@embedded-postgres/darwin-arm64": true
   "@google/genai": false
   cbor-extract: false
   esbuild: true

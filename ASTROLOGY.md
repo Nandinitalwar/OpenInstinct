@@ -2,7 +2,36 @@
 
 This fork specializes the existing OpenInstinct agent for conversational Western
 tropical astrology. The existing web chat and Linq iMessage channel use the same
-root instructions and `calculate_astrology` tool. The model configuration is unchanged.
+root instructions and `calculate_astrology` tool. Model calls now use OpenRouter
+by default, with the original Vercel AI Gateway route available via configuration.
+
+## Local web testing with OpenRouter
+
+No cloud database, Linq number, Kernel account, or Docker installation is needed
+for local astrology chat. On this Mac, run `pnpm db:local` in one terminal to
+start persistent PostgreSQL on `127.0.0.1:54329`. Its data directory is ignored
+by Git. This database uses development credentials and binds only to loopback;
+it is not a production database service.
+
+Copy `.env.example` to `.env.local` if it does not already exist. Set
+`MODEL_PROVIDER=openrouter`, `OPENROUTER_API_KEY` to your key, and
+`OPENROUTER_MODEL=google/gemini-2.5-flash-lite`. The key stays server-side. Do
+not commit it or paste it into chat. Keep both database URLs pointed at the
+local database. Leave Kernel and Linq credentials blank for web testing.
+
+Run `pnpm db:migrate`, then `pnpm dev:app --hostname 127.0.0.1` in another
+terminal. Open `http://localhost:3000/chat`. The existing localhost-only
+development sign-in accepts a test phone number (for example `+15555550100`)
+without sending an SMS. Production still requires verified phone sign-in.
+
+Use the workspace model picker at `/` to select another tool-capable OpenRouter
+model. Prices are fetched from OpenRouter and shown in USD per million input /
+output tokens; actual billing depends on tokens, routing, caching, and provider
+charges. Provider selections are stored separately in the database. Start a new
+chat for clean comparisons so earlier answers do not influence the next model.
+
+`MODEL_PROVIDER=gateway` restores the original AI Gateway path. An absent or
+invalid OpenRouter key never triggers an automatic paid fallback to that path.
 
 ## Implemented
 
@@ -37,9 +66,8 @@ pnpm exec tsx -e 'import { calculateAstrology } from "./agent/lib/astrology/char
 
 ## Run conversations
 
-Follow the upstream README's local setup: Node 24, pnpm, Docker/Postgres, and
-AI Gateway and Kernel credentials in `.env.local`. Run `pnpm dev`, sign in, and
-open `/chat`. Example: “I was born August 12, 1995 at 2:30pm in Los Angeles.
+Use the local setup above, or follow the upstream README's Docker/Vercel path.
+Example: “I was born August 12, 1995 at 2:30pm in Los Angeles.
 What themes do you see in my chart?”
 
 For real texts, deploy and connect Linq using the README instructions. A fork

@@ -63,7 +63,7 @@ export const env = createEnv({
   server: {
     // Required
     DATABASE_URL: databaseUrlSchema,
-    KERNEL_API_KEY: requiredValue,
+    KERNEL_API_KEY: requiredValue.optional(),
 
     // Optional overrides with local defaults. Vercel deployments provision
     // installation secrets in their connected private Blob store.
@@ -81,6 +81,9 @@ export const env = createEnv({
     ),
 
     // Optional
+    MODEL_PROVIDER: z.enum(["openrouter", "gateway"]).default("openrouter"),
+    OPENROUTER_API_KEY: requiredValue.optional(),
+    OPENROUTER_MODEL: requiredValue.default("google/gemini-2.5-flash-lite"),
     BLOB_READ_WRITE_TOKEN: requiredValue.optional(),
     BLOB_STORE_ID: requiredValue.optional(),
     GOOGLE_CONNECTOR_UID: requiredValue.default("google/open-instinct"),
