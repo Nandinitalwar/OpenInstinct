@@ -40,7 +40,58 @@ chat for clean comparisons so earlier answers do not influence the next model.
 `MODEL_PROVIDER=gateway` restores the original AI Gateway path. An absent or
 invalid OpenRouter key never triggers an automatic paid fallback to that path.
 
-## Implemented
+## Durable memory
+
+Memory follows the profile + searchable records + separate maintenance pattern
+described in the [Instinct teardown](https://supermemory.ai/blog/reverse-engineering-instinct-memory/).
+That article is a black-box reconstruction, not Instinct's published internals.
+This implementation stores records in PostgreSQL rather than a Git repository
+or a hosted Supermemory account.
+
+- A profile/index is derived from current records before each turn and after
+  compaction. It refreshes immediately from SQL, has stable message identity,
+  prioritizes birth/profile/preferences, and has an approximately 6,000-character
+  budget. The index is a compact view, not a complete archive.
+- Typed records hold summaries, details, retrieval aliases, related-record IDs,
+  source session, update time, and an optional explicit expiry. Search is scoped
+  keyword/alias matching, not vector or semantic search. Search results are
+  paginated; expired records are hidden unless `includeExpired` is requested.
+- The foreground agent can search/read and immediately honor explicit saves,
+  corrections and forget requests. Updates require the current revision and
+  retain up to ten prior content revisions; historical claims are not current
+  truth. Forgotten records lose current and historical content, retaining
+  metadata-only tombstones to reject stale writes.
+- A separate post-turn extraction pass captures up to four useful user-stated
+  facts using the selected model through the configured provider. It reads the
+  current user input and a bounded recent-record set, requires supporting quotes
+  present in the input, and does not ingest assistant answers as personal facts.
+  It has a 15-second timeout, an 1,800-token output cap, and at most one attempt
+  per settled turn. This adds a bounded model call; it is not a free operation.
+- Automatic extraction is best-effort. A failed/timed-out extraction is logged
+  and is not retried under the same operation ID; a new explicit "remember"
+  request can save immediately. It does not archive every message or ingest all
+  old chats retroactively. There is no scheduled daily/weekly consolidation job.
+- Birth-related input and likely credentials are excluded from automatic
+  capture. The answering agent must get explicit consent before saving a birth
+  record. Consent handling also relies on model instructions; this is not a
+  separate audited consent-management product.
+- Existing Personal Info and workstream/task memory remain available alongside
+  the record archive. Eve continues to own conversation context and compaction.
+
+The archive supports up to 200 non-forgotten records per user/scope. Expiry
+hides a temporary event from normal recall; it does not erase it. Forgetting
+erases the selected memory record's retained content, not chat transcripts,
+other duplicated records, external copies, or database backups. The agent is
+instructed to find and remove matching copies in Personal Info/workstreams too.
+Existing ephemeral profile notes are not automatically migrated.
+
+The PostgreSQL data directory survives local app/server restarts. Keep it or
+back it up when moving computers. No memory is committed to the source repo.
+
+Try: "Remember that I prefer concise practical readings", start a new chat and
+ask "How do I prefer my readings?", then "Forget my reading preferences".
+
+## Chart features
 
 - Conversational birth-date, known-time, and city onboarding; confirm the IANA
   time zone before calculation. The model resolves the city; this is not an
